@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: guestbook
+      POSTGRES_USER: guestbook
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-guestbook}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guestbook"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://guestbook:${DB_PASSWORD:-guestbook}@db:5432/guestbook
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_LIFETIME_SECONDS: ${JWT_LIFETIME_SECONDS:-3600}
+      FIRST_USER_EMAIL: ${FIRST_USER_EMAIL:-admin@example.com}
+      FIRST_USER_PASSWORD: ${FIRST_USER_PASSWORD:-changeme}
+      GOOGLE_SERVICE_ACCOUNT_KEY_PATH: /app/credentials/service-account.json
+      CORS_ORIGINS: http://localhost:3000
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml:ro
+      - ./credentials:/app/credentials:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

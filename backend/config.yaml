@@ -1,0 +1,6 @@
+accommodation:
+  name: "Hotel Example"
+  address: "123 Main Street, Bratislava"
+
+google_drive:
+  folder_id: "your-google-drive-folder-id"
